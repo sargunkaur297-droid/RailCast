@@ -14,6 +14,8 @@ RailCast is a research and portfolio project for analysing historical Indian rai
 
 ## Dashboard
 
+**Live demo:** [Open RailCast on Streamlit](https://railcast-vhekyhkqqwmsures6xcd37.streamlit.app/)
+
 The current Streamlit application has four tabs:
 
 1. **Network Overview** — zone-level journey volume, average delay and delay-rate summaries.
