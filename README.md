@@ -1,96 +1,170 @@
-# 🚆 Predictive Intelligence System for Indian Railway Delay Cascade Analytics
+# RailCast — Railway Delay Prediction & Historical Journey Analytics
 
-An end-to-end, high-performance data engineering and machine learning platform designed to model, trace, and forecast network-wide train delay cascades and station-level bottleneck dynamics across Indian Railways.
+RailCast is a research and portfolio project for analysing historical Indian railway journey records, forecasting train-delay risk with machine learning, and exploring station-level delay patterns and railway corridor structure.
 
----
+> **Important:** RailCast is not a live train-tracking service. Its dashboard uses locally prepared historical data and trained model artifacts. Forecasts and analytics should not be interpreted as official real-time railway information.
 
-## 📌 Project Overview
-While consumer transit apps (*Ixigo*, *Where Is My Train*) track trains linearly via GPS, they fail to model how a single delay blocks shared tracks and platforms, triggering a **cascade delay** on subsequent services. Furthermore, physical freight rakes and passenger trains compete for the same physical corridors, where localized bottlenecks rapidly compound into multi-hour gridlocks.
+## Project at a glance
 
-This system addresses that gap through a dual-granularity architecture:
-1. **Station-Level Kinematic Localization**: Ingests **1.28 Million real station delay records** (IIT Kharagpur RSTGCN Dataset, Sep 2024) using **Polars** and an indexed **DuckDB** analytical warehouse. Computes track running deltas ($\Delta_{\text{running}}$) and platform dwell deltas ($\Delta_{\text{dwell}}$) across thousands of track sections.
-2. **Network-Wide Topological Graph**: Models India's **16 railway zones and High-Density Network (HDN) corridors** using **NetworkX** to compute Betweenness Centrality and quantify structural network chokepoints.
-3. **Scientific Machine Learning Benchmark**: Evaluates Ridge, Random Forest, XGBoost, and LightGBM on 100,000 journeys alongside an empirical **ablation study** proving the predictive power of engineered cascade features.
-4. **Passenger-Friendly Streamlit Dashboard**: Lets a user find a train, see a recorded trip's arrival delay, follow delay changes stop by stop, and understand where time was lost or recovered. The dashboard clearly labels these as historical records, not live running status or a forecast for today's trip.
+- **Data engineering:** Polars for data preparation and DuckDB for local analytical storage.
+- **Machine learning:** LightGBM prediction models, with Ridge, Random Forest and XGBoost benchmark comparisons.
+- **Network analysis:** NetworkX-based railway-zone and corridor metrics.
+- **Station-level analytics:** Running-delay and dwell-delay decomposition from historical station records.
+- **Dashboard:** Streamlit and Plotly.
 
----
+## Dashboard
 
-## 📑 Documentation Index
+The current Streamlit application has four tabs:
 
-| Document | Description |
-| :--- | :--- |
-| 🎓 [Viva Defense & Evaluator Guide](docs/VIVA_EVALUATOR_DEFENSE_GUIDE.md) | Answers to core viva questions: NetworkX vs. Neo4j rationale and academic novelty of engineered cascade features. |
-| 🎯 [Prediction Reliability & Ground-Truth Audit](docs/PREDICTION_RELIABILITY_AND_GROUND_TRUTH.md) | Explanation of ML confidence mechanics, variance calibration, and fact-grounded telemetry audit. |
-| 🏗️ [Architecture and Workflow](docs/ARCHITECTURE_AND_WORKFLOW.md) | Dual-layer architecture, DuckDB schemas, kinematic equations, and sequence diagrams. |
-| 🔍 [Exploratory Data Analysis (EDA)](docs/EXPLORATORY_DATA_ANALYSIS.md) | Full-scale analysis across 1.5M records, data quality, distributions, and class balance. |
-| 🔬 [Scientific Benchmarking & Findings](docs/SCIENTIFIC_BENCHMARKING_AND_FINDINGS.md) | Multi-model evaluation, LightGBM champion metrics, and cascade ablation study. |
-| 📊 [Model Benchmark & Comparison](docs/MODEL_BENCHMARK_AND_COMPARISON.md) | Deep comparative evaluation across Ridge, Random Forest, XGBoost, and LightGBM. |
-| 📍 [Journey-Level Granularity Explained](docs/JOURNEY_LEVEL_GRANULARITY_EXPLAINED.md) | Architectural rationale for macro-journey vs. micro-station data modeling. |
-| 🌐 [Graph & Dataset Synergy Guide](docs/GRAPH_AND_DATASET_SYNERGY.md) | Mathematical role of the topological graph, centrality ripple effects, and two-dataset synergy. |
-| 🚀 [Usage and Requirements Guide](docs/USAGE_AND_REQUIREMENTS.md) | Complete environment setup, pipeline commands, testing, and dashboard walkthrough. |
-| 🎤 [Presentation & Slide Deck Context](docs/PPT_PRESENTATION_CONTEXT.md) | Structured narrative, freight dilemma analysis, and defense talking points. |
-| 🗺️ [Phased Implementation Roadmap](docs/phased_implementation_plan.md) | Step-by-step milestones, validation gates, and implementation status. |
+1. **Network Overview** — zone-level journey volume, average delay and delay-rate summaries.
+2. **Train Forecast** — train selection and model-driven delay estimates using the available historical dataset and trained model.
+3. **Corridor Intelligence** — station-to-station corridor and delay-pattern analysis.
+4. **Model & Architecture** — model performance and implementation information.
 
----
+The dashboard expects the local DuckDB database at `db/railway.duckdb` and the trained model bundle at `models/champion_models.pkl`. The benchmark view also uses `models/benchmark_report.json`.
 
-## 🚀 Quick Start
+## Repository structure
 
-### 1. Prerequisites & Virtual Environment
+```text
+RailCast/
+├── app/
+│   └── dashboard.py
+├── data/
+│   ├── ir_data_dictionary.csv
+│   └── station_data/
+│       ├── stations_zones_mapping.json
+│       └── IRN_edges.csv
+├── docs/
+├── models/
+│   ├── champion_models.pkl
+│   ├── benchmark_report.json
+│   ├── correlation_summary.json
+│   └── eda_results.json
+├── scripts/
+├── src/
+│   ├── station_etl.py
+│   ├── trajectory_profiler.py
+│   ├── graph_builder.py
+│   ├── cascade_features.py
+│   ├── predictor.py
+│   ├── benchmark.py
+│   └── train.py
+├── tests/
+├── requirements.txt
+├── run_app.bat
+└── README.md
+```
+
+## Requirements
+
+- Python 3.10 or newer (use a Python version supported by the installed packages).
+- Windows, macOS or Linux.
+- 8 GB RAM minimum; 16 GB recommended for larger data-processing runs.
+- Additional disk space for the source datasets and generated DuckDB database.
+
+## Setup
+
+### 1. Clone the repository
+
 ```powershell
-# Clone or navigate to the repository
-cd "Indian-railway-delay-prediction-system"
+git clone https://github.com/sargunkaur297-droid/RailCast.git
+cd RailCast
+```
 
-# Create and activate virtual environment
-python -m venv .venv
-.\.venv\Scripts\activate
+### 2. Create a virtual environment and install dependencies
 
-# Install locked dependencies
+Windows PowerShell:
+
+```powershell
+py -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
 pip install -r requirements.txt
-pip install xgboost
 ```
 
-### 2. Run Data Ingestion & Build DuckDB Warehouse
+macOS / Linux:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+## Data setup
+
+Large/raw source datasets and the generated DuckDB database are intentionally not committed to this repository. This keeps the Git repository smaller and avoids distributing data files unnecessarily.
+
+To rebuild the station-level database, obtain the source data used by the project and place the following files in `data/station_data/`:
+
+- `train_routes_delays_Sep2024.csv`
+- `train_routes_Sep2024.csv`
+
+The repository already includes `stations_zones_mapping.json`. The station ETL script requires both CSV files; it will stop with a clear missing-file error if either is absent.
+
+For the journey-level benchmark/training pipeline, place the required journey dataset at `data/ir_train.csv`. Do not assume this file is included in a fresh clone.
+
+## Build the local DuckDB database
+
+After placing the two station-level CSV files in `data/station_data/`, run:
+
 ```powershell
-# Ingest 1.28M station observations & build station_stops, section_analytics, journeys tables
-.\.venv\Scripts\python.exe src/station_etl.py
+$env:PYTHONPATH = "."
+python src/station_etl.py
 ```
-*(Ingests 1.28M stops, calculates track section kinematics, and populates `db/railway.duckdb` in seconds).*
 
-### 3. Run Automated Verification Tests
+This creates `db/railway.duckdb` locally and builds the station, section-analytics and journey tables used by the dashboard.
+
+## Run the dashboard
+
+Once the local database and required model artifacts are available:
+
 ```powershell
-$env:PYTHONPATH="."
-.\.venv\Scripts\python.exe -m pytest
+streamlit run app/dashboard.py
 ```
-*(All 9 unit tests covering ETL, Graph Centrality, ML Inference, and Station Trajectory Profiling pass seamlessly).*
 
-### 4. Launch the Interactive Dashboard
-Double-click `run_app.bat` or execute:
+Then open http://localhost:8501.
+
+On Windows, you can alternatively double-click `run_app.bat` after installing dependencies and preparing the local database.
+
+## Run tests
+
 ```powershell
-.\.venv\Scripts\streamlit.exe run app/dashboard.py
+$env:PYTHONPATH = "."
+python -m pytest -q
 ```
-Open **`http://localhost:8501`** in your web browser.
 
----
+Some integration tests depend on the locally generated DuckDB database and source data. Prepare the data/database first when running the complete suite. A fresh clone without those local assets may not be able to run every data-dependent test.
 
-## 📊 Scientific Benchmark Summary
+## Rebuild models (optional)
 
-| Model | MAE (mins) | RMSE | $R^2$ | AUC-ROC | Train Time | Inference Latency |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Ridge Regression** | 36.76 | 47.74 | 0.4175 | 0.9140 | 0.04s | < 0.001 ms |
-| **Random Forest ($n=50$)** | 33.95 | 46.35 | 0.4510 | 0.9068 | 3.69s | 0.002 ms |
-| **XGBoost** | 33.80 | 45.87 | 0.4623 | 0.9148 | 0.88s | < 0.001 ms |
-| **LightGBM (Champion)** | **33.65** | **45.76** | **0.4648** | **0.9153** | **0.47s** | **< 0.001 ms** |
+The benchmark and training scripts require `data/ir_train.csv` and the database/data inputs expected by the feature-engineering pipeline:
 
-### Key Ablation & EDA Findings:
-* Adding cascade features (`rake_cascade_chain_length`, `zone_delay_pressure`, `corridor_betweenness_centrality`) reduced prediction error by **0.53 minutes** and gained **+0.0059 AUC-ROC**.
-* **`zone_delay_pressure` emerged as the #1 most important feature** across the entire dataset during model training.
-* Section kinematic analysis reveals that **track running deceleration accounts for ~70-80% of total delay accumulation**, while platform dwell excess contributes ~20-30%.
+```powershell
+$env:PYTHONPATH = "."
+python src/benchmark.py
+python src/train.py
+```
 
----
+These commands regenerate model artifacts and can take time depending on the dataset and hardware.
 
-## 🛠️ Tech Stack
-* **Big Data & Analytics Engine**: DuckDB (Columnar SQL Warehouse), Polars (Rust-based Parallel Dataframe)
-* **Graph Network Modeling**: NetworkX (Topological Centrality & Corridor Graph)
-* **Machine Learning**: LightGBM, XGBoost, Scikit-Learn
-* **Application & Visualizations**: Streamlit, Plotly Express & Graph Objects
-* **Testing & Quality Assurance**: PyTest (9 Automated Test Suites)
+## Documentation
+
+- [Architecture and workflow](docs/ARCHITECTURE_AND_WORKFLOW.md)
+- [Usage and requirements](docs/USAGE_AND_REQUIREMENTS.md)
+- [Scientific benchmarking and findings](docs/SCIENTIFIC_BENCHMARKING_AND_FINDINGS.md)
+- [Model benchmark and comparison](docs/MODEL_BENCHMARK_AND_COMPARISON.md)
+- [Viva evaluator guide](docs/VIVA_EVALUATOR_DEFENSE_GUIDE.md)
+- [Prediction reliability and ground-truth audit](docs/PREDICTION_RELIABILITY_AND_GROUND_TRUTH.md)
+- [NetworkX and feature-engineering report](README_NETWORKX_AND_FEATURE_ENGINEERING.md)
+
+## Data, interpretation and limitations
+
+- Results depend on the source dataset, preprocessing choices and the locally generated database.
+- The dashboard is a historical-data research prototype, not an official railway information service.
+- Model metrics in the repository describe the reported evaluation setup; they are not a guarantee of future performance.
+- Do not commit private credentials, API keys, personal datasets or local database files.
+
+## License
+
+No license file is currently included. Unless a license is added, the repository's contents are not automatically granted an open-source reuse license.
