@@ -1,110 +1,100 @@
-# Requirements and Usage Guide
+# RailCast — Installation and Usage
 
-## 1. System Requirements
+## 1. Requirements
 
-### Hardware:
-* **Operating System**: Windows 10/11, macOS, or Linux (x86_64 or ARM64).
-* **Processor**: Multi-core modern CPU (4+ cores recommended for parallel Polars ETL).
-* **RAM**: 8 GB minimum (16 GB recommended for high-performance in-memory processing).
-* **Storage**: ~2 GB free disk space (includes raw datasets, DuckDB warehouse, virtual environment, and model bundles).
+- Python 3.10 or newer.
+- Windows, macOS or Linux.
+- 8 GB RAM minimum; 16 GB recommended for large ETL and model-training workloads.
+- Disk space for the source CSV files, virtual environment and generated DuckDB database.
 
-### Software & Environment:
-* **Python**: `3.10` to `3.13` (Tested and verified on Python 3.10 and 3.13).
-* **Key Dependencies**:
-  * `polars>=1.0.0` (Fast multi-threaded Rust dataframe processing)
-  * `duckdb>=1.0.0` (In-process columnar SQL database engine)
-  * `lightgbm>=4.3.0` (Gradient boosting engine)
-  * `xgboost>=3.0.0` (Gradient boosting baseline)
-  * `scikit-learn>=1.5.0` (Data preprocessing, metrics, and models)
-  * `networkx>=3.2.0` (Graph topology and centrality algorithms)
-  * `streamlit>=1.35.0` (Interactive web UI framework)
-  * `plotly>=5.20.0` (Interactive data visualizations)
-  * `pytest>=8.0.0` (Automated testing suite)
-  * `joblib>=1.4.0` (Model serialization)
+Install all Python dependencies from the repository root:
 
----
-
-## 2. Installation & Setup
-
-### Step 1: Clone or Navigate to Project
-```powershell
-cd "Indian-railway-delay-prediction-system"
-```
-
-### Step 2: Create & Activate Virtual Environment
 ```powershell
 python -m venv .venv
-.\.venv\Scripts\activate
-```
-
-### Step 3: Install Locked Dependencies
-```powershell
-pip install --upgrade pip
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
 pip install -r requirements.txt
-pip install xgboost
 ```
 
----
+The requirements file includes XGBoost because the benchmark module imports it.
 
-## 3. Running the Complete Pipeline
+## 2. Source data required
 
-### Step 1: Ingest Station Delays & Build DuckDB Warehouse
+The raw source datasets and generated DuckDB database are not included in a fresh clone. Obtain the source data used for this project and place the files at these exact paths:
+
+| File | Used by |
+|---|---|
+| `data/station_data/train_routes_delays_Sep2024.csv` | Station-level ETL |
+| `data/station_data/train_routes_Sep2024.csv` | Station-level ETL |
+| `data/ir_train.csv` | Journey-level ETL, feature engineering, benchmark and training |
+| `data/ir_test.csv` | Optional dashboard fallback for train selection |
+
+The repository includes the station-to-zone mapping file at `data/station_data/stations_zones_mapping.json`. Large raw CSVs and local DuckDB files are excluded by `.gitignore`; they must be supplied locally. The ETL scripts cannot recreate missing source datasets.
+
+## 3. Build the station-level DuckDB database
+
+From the repository root, after placing both required station CSV files:
+
 ```powershell
-$env:PYTHONPATH="."
-.\.venv\Scripts\python.exe src/station_etl.py
+$env:PYTHONPATH = "."
+python src/station_etl.py
 ```
-*Processes 1.28M station delay records (IIT Kharagpur RSTGCN Sep 2024), calculates track section kinematics, and populates `station_stops`, `section_analytics`, and `journeys` tables in `db/railway.duckdb`.*
 
-### Step 2: Run Exploratory Data Analysis (EDA) & Heatmap Generation
+The script creates `db/railway.duckdb` and writes the `station_stops`, `section_analytics` and `journeys` tables.
+
+If you also need to rebuild the journey-level dataset table from `data/ir_train.csv`, run:
+
 ```powershell
-# Run full statistical EDA across 1.5M records
-.\.venv\Scripts\python.exe src/run_eda.py
-
-# Generate feature correlation matrix and save heatmap
-.\.venv\Scripts\python.exe src/generate_heatmap.py
+$env:PYTHONPATH = "."
+python src/etl.py
 ```
-*Outputs `models/eda_results.json`, `models/correlation_summary.json`, and `docs/feature_correlation_heatmap.png`.*
 
-### Step 3: Run Scientific Benchmark & Ablation Study
+Note: `src/etl.py` rebuilds the DuckDB file. Run the station ETL afterwards if the dashboard needs the station-level tables as well.
+
+## 4. Launch the dashboard
+
+The current dashboard has four tabs: Network Overview, Train Forecast, Corridor Intelligence, and Model & Architecture.
+
+The dashboard expects:
+- `db/railway.duckdb` with the tables created by the station ETL.
+- `models/champion_models.pkl` for prediction.
+- `models/benchmark_report.json` for benchmark display.
+
+Run:
+
 ```powershell
-.\.venv\Scripts\python.exe src/benchmark.py
+streamlit run app/dashboard.py
 ```
-*Evaluates Ridge, Random Forest, XGBoost, and LightGBM on 100,000 journeys and saves `models/benchmark_report.json`.*
 
-### Step 4: Train Champion Models (LightGBM)
+Open http://localhost:8501. On Windows, `run_app.bat` is an alternative launcher after the environment and local data have been prepared.
+
+**This is a historical-data research prototype, not a live train-tracking service.** It does not provide official real-time running status.
+
+## 5. Rebuild benchmark and models (optional)
+
+The feature-engineering, benchmark and training scripts require `data/ir_train.csv` and a compatible local DuckDB database:
+
 ```powershell
-.\.venv\Scripts\python.exe src/train.py
+$env:PYTHONPATH = "."
+python src/benchmark.py
+python src/train.py
 ```
-*Trains dual LightGBM continuous delay regressor and delay probability classifier, saving serialized models to `models/champion_models.pkl`.*
 
-### Step 5: Run Automated Test Suite
+These scripts regenerate benchmark/model artifacts and may take several minutes or longer depending on the data and hardware.
+
+## 6. Run tests
+
 ```powershell
-$env:PYTHONPATH="."
-.\.venv\Scripts\python.exe -m pytest
+$env:PYTHONPATH = "."
+python -m pytest -q
 ```
-*Executes all 10 automated unit tests across ETL, Graph Modeling, ML Inference, and Station Trajectory Profiling.*
 
----
+Some tests are integration tests and require the locally generated DuckDB database and source data. A fresh clone without those files may not pass every data-dependent test.
 
-## 4. Launching the Interactive Dashboard
+## 7. Troubleshooting
 
-### Windows Shortcut:
-Double-click `run_app.bat` or run:
-```powershell
-.\.venv\Scripts\streamlit.exe run app/dashboard.py
-```
-Open **`http://localhost:8501`** in your web browser.
-
----
-
-## 5. Dashboard Walkthrough
-
-The dashboard is designed for passengers and uses plain-language labels:
-
-1. **Find a train**: Start typing its name or number and choose it from the list.
-2. **Read the trip summary**: See the recorded route, date, distance, number of stops, and delay at the destination.
-3. **Follow the delay**: The chart shows how many minutes early or late the train was at each stop. Hover over a point to see the station name.
-4. **Understand time changes**: See recorded time lost between stations, extra time stopped, time made up later, and the sections where delay grew most.
-5. **Open the timing table**: Expand the table to compare scheduled and recorded arrival times at each stop.
-
-**Important:** This dashboard displays historical journeys from the local DuckDB database. It is not connected to a live railway feed and does not forecast today's arrival. Use official Indian Railways services for current running status. If the database is missing, build it using `python src/station_etl.py` before launching the dashboard.
+- **Missing CSV:** Verify the exact filenames and paths in the source-data table above.
+- **Missing database:** Run `python src/station_etl.py` after adding the two station CSV files.
+- **Missing model bundle:** Restore the tracked `models/champion_models.pkl` artifact or regenerate it using `python src/train.py` after preparing its inputs.
+- **Import errors:** Activate the virtual environment, install `requirements.txt`, and run commands from the repository root.
+- **Port already in use:** Start Streamlit on another port, for example `streamlit run app/dashboard.py --server.port 8502`.
