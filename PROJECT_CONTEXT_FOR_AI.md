@@ -26,7 +26,7 @@ A **Predictive Intelligence System** running on local Big Data tooling (**Polars
 | **Graph Topology** | **NetworkX** (`3.6.1`) | 16-node graph modeling Indian Railway zones & High Density Network (HDN) corridors to compute betweenness and degree centrality. |
 | **Station Kinematics & Profiling** | **TrajectoryProfiler** | Service calculating route waterfall trajectories, track running deceleration vs. platform dwell loss, and identifying the worst chronic bottleneck segments. |
 | **Predictive ML** | **LightGBM** (`4.7.0`) | CPU-optimized gradient boosting; proved superior in empirical benchmarking against Ridge, Random Forest, and XGBoost. |
-| **User Interface** | **Streamlit** (`1.64.0`) + **Plotly** | Clean, responsive 5-tab web dashboard featuring Commuter Zero-Effort mode with grounded telemetry, Network Hotspots, AI benchmarks, Rake Turnaround simulator, and Festival Rush analytics. |
+| **User Interface** | **Streamlit** (`1.64.0`) + **Plotly** | Streamlit dashboard with four tabs: Network Overview, Train Forecast, Corridor Intelligence, and Model & Architecture. It uses local historical data and is not a live train-tracking service. |
 
 ---
 
@@ -82,7 +82,7 @@ We avoided arbitrary model selection by empirically evaluating 4 model families 
 ## 6. Project Architecture & Directory Layout
 
 ```
-Indian-railway-delay-prediction-system/
+RailCast/
 ├── data/
 │   ├── ir_train.csv / ir_test.csv        # Journey-level macro datasets
 │   ├── ir_data_dictionary.csv            # Macro schema definitions
@@ -137,23 +137,15 @@ Indian-railway-delay-prediction-system/
 
 ## 7. Interactive Dashboard Design (`app/dashboard.py`)
 
-1. **Tab 1: 🎯 Check My Train**:
-   * **Passenger / Commuter View (Zero-Effort Default)**: Select a Train Number. The backend automatically auto-populates route specs, inspects incoming rake status, checks seasonal weather alerts, and evaluates corridor congestion pressure.
-   * **Grounded Telemetry Audit**: Purely verifiable parameters (Average Stop Spacing, Zone Delay Baseline, Visibility Factor) replacing mock sensor telemetry.
-   * **AI Delay Forecast**: Dual-target prediction card (estimated delay minutes + % probability of exceeding 15 min threshold + risk tier).
-   * **Journey Delay Map (Station-by-Station)**: Interactive Plotly waterfall chart showing cumulative arrival delay vs. section-by-section delay additions ($\Delta_{\text{running}}$) and buffer time recoveries.
-   * **Bottleneck Cards**: Highlights the top 3 worst delay-inducing track segments along the selected train's journey.
-   * **Timing Log Expander**: Full tabular breakdown of scheduled vs. actual arrival/departure times and station dwells.
-2. **Tab 2: 🗺️ Network Hotspots**:
-   * Zone-by-zone average delays and congestion indices mapped against topological betweenness centrality.
-   * **Top 10 Chronic National Track Bottlenecks**: Horizontal bar chart identifying segments across India with the highest recurring delay accumulation.
-3. **Tab 3: 📊 AI Performance**:
-   * Multi-model benchmark leaderboard (Ridge, Random Forest, XGBoost, LightGBM) with interactive MAE and AUC comparison charts.
-4. **Tab 4: ⚡ Cascade Simulator**:
-   * Sandbox modeling how an initial turnaround delay propagates across shared trainset services.
-5. **Tab 5: 🪔 Festival Rush**:
-   * Empirical analysis of the **Ganesh Chaturthi (Sept 2024)** festival rush, showing daily delay surges (+14.3 min network spike) caused by injection of unscheduled special trains on congested lines.
+The current Streamlit dashboard contains four tabs:
 
+1. **Network Overview** — recorded journey volume, zone-level average delays and delay-rate summaries.
+2. **Train Forecast** — train selection and delay estimates from the trained model and locally available historical records.
+3. **Corridor Intelligence** — station-to-station corridor analytics and delay-pattern inspection.
+4. **Model & Architecture** — model evaluation information and project architecture.
+
+The application reads its local DuckDB database from `db/railway.duckdb` and the model bundle from `models/champion_models.pkl`. The dashboard is based on historical data and must not be described as live train tracking.
+ 
 ---
 
 ## 8. Verification & Quick Commands
@@ -164,7 +156,7 @@ To run tests and launch the system:
 # 1. Run full station & kinematic ETL pipeline
 .\.venv\Scripts\python.exe src/station_etl.py
 
-# 2. Run automated test suite (All 10 tests pass in ~3.3s)
+# 2. Run automated test suite (Run the automated test suite; data-dependent tests require the local DuckDB database and source files.)
 $env:PYTHONPATH="."
 .\.venv\Scripts\python.exe -m pytest
 
