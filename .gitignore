@@ -1,33 +1,42 @@
-# Virtual Environment
+# Python environments
 .venv/
 venv/
 ENV/
 env/
 
-# Python Cache
+# Python caches and test artifacts
 __pycache__/
 *.py[cod]
 *$py.class
-*.pytest_cache/
+.pytest_cache/
+.coverage
+htmlcov/
 
-# Large Datasets & Databases (Over 50MB-350MB, generated locally via src/etl.py)
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+.streamlit/secrets.toml
+
+# Local databases and generated data
+db/*.duckdb
+db/*.duckdb.wal
 data/ir_train.csv
 data/ir_test.csv
 data/ir_sample_submission.csv
 data/station_data/train_delays_Sep2024.json
 data/station_data/train_routes_delays_Sep2024.csv
 data/station_data/train_routes_Sep2024.csv
-db/*.duckdb
-db/*.duckdb.wal
 
-# Operating System & Lock Files
+# Local/editor/OS files
 .DS_Store
 Thumbs.db
 desktop.ini
+.vscode/
+.idea/
 ~$*
 
-
-# Temporary and Large Raw Datasets
+# Project-specific generated or backup files
 Indian-Railway-Network-and-Delays/
 app/dashboard_backup.py
 app/railpulse_hero_banner.*
